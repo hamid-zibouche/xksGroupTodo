@@ -75,7 +75,7 @@ jobs:
         path: backend/todo/target/*.jar
 
   # ===== JOB 3: BUILD DOCKER =====
-  build-docker:
+  build-push-docker:
     name: 🐳 Build Docker Image
     runs-on: ubuntu-latest
     needs: package-jar
@@ -87,21 +87,25 @@ jobs:
     - name: 🐳 Build Docker image
       working-directory: ./backend/todo
       run: |
-        docker build -t xks-todo-backend:${{ github.sha }} .
-        docker build -t xks-todo-backend:latest .
+        # Build avec tags multiples
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend:latest .
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend:${{ github.sha }} .
+        
+        # Push vers Docker Hub
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend:latest
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend:${{ github.sha }}
     
-    - name: 📋 Docker image info
+    - name: 📋 Docker Hub info
       run: |
-        echo "🐳 Images créées :"
-        docker images | grep xks-todo-backend
-        echo "📏 Taille :"
-        docker images xks-todo-backend:latest --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
+        echo "🎉 Images poussées vers Docker Hub :"
+        echo "🐳 ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend:latest"
+        echo "🐳 ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend:${{ github.sha }}"
 
   # ===== JOB 4: DEPLOY SIMULATION =====
   deploy:
     name: 🚀 Deploy Simulation
     runs-on: ubuntu-latest
-    needs: [build-and-test, package-jar, build-docker]
+    needs: [build-and-test, package-jar, build-push-docker]
     if: github.ref == 'refs/heads/main'
     
     steps:
@@ -110,11 +114,10 @@ jobs:
         echo "🎉 === DÉPLOIEMENT BACKEND SIMULÉ ==="
         echo "✅ Tests passés avec succès"
         echo "✅ JAR créé et testé"
-        echo "✅ Image Docker créée et testée"
-        echo "🐳 Image : xks-todo-backend:latest"
-        echo "🌐 Prêt pour déploiement sur :"
-        echo "   - AWS ECS"
-        echo "   - Kubernetes"
-        echo "   - Docker Swarm"
-        echo "   - Votre serveur"
-        echo "💡 Commande : docker run -p 8080:8080 xks-todo-backend:latest"
+        echo "✅ Image Docker créée et poussée sur Docker Hub"
+        echo "✅ Image Docker testée avec succès"
+        echo "🐳 Image Docker Hub : ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend:latest"
+        echo "🌐 Prêt pour déploiement avec :"
+        echo "   docker pull ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend:latest"
+        echo "   docker run -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend:latest"
+        echo "📍 Disponible sur Docker Hub : https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-backend"
