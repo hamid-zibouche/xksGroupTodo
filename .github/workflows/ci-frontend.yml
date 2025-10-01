@@ -70,13 +70,13 @@ jobs:
       working-directory: ./frontend
       run: |
         echo "🔨 Build de l'image Docker..."
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:latest .
+        docker build -t hamidzch/xks-todo-frontend:latest .
         echo "✅ Build terminé"
     
     - name: 📤 Push Docker image  
       run: |
         echo "📤 Push vers Docker Hub..."
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:latest
+        docker push hamidzch/xks-todo-frontend:latest
         echo "🎉 Push réussi !"
 
   # ===== JOB 3: DEPLOY SIMULATION =====
@@ -92,8 +92,8 @@ jobs:
         echo "🎉 === DÉPLOIEMENT FRONTEND SIMULÉ ==="
         echo "✅ React app compilée avec succès"
         echo "✅ Image Docker créée et poussée sur Docker Hub"
-        echo "🐳 Image Docker Hub : ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:latest"
+        echo "🐳 Image Docker Hub : hamidzch/xks-todo-frontend:latest"
         echo "🌐 Prêt pour déploiement avec :"
-        echo "   docker pull ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:latest"
-        echo "   docker run -p 3000:80 ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:latest"
-        echo "📍 Disponible sur Docker Hub : https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend"
+        echo "   docker pull hamidzch/xks-todo-frontend:latest"
+        echo "   docker run -p 3000:80 hamidzch/xks-todo-frontend:latest"
+        echo "📍 Disponible sur Docker Hub : https://hub.docker.com/r/hamidzch/xks-todo-frontend"
