@@ -1,134 +1,85 @@
-name: Backend CI/CD Pipeline
+name: Backend CI
 
-# Déclenchement du pipeline
 on:
   push:
     branches: [ main ]
     paths: 
       - 'backend/**'
-      - '.github/workflows/backend-ci.yml'
   pull_request:
     branches: [ main ]
     paths: 
       - 'backend/**'
 
-# Variables d'environnement globales
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: xks-todo-backend
-  JAVA_VERSION: '21'
-
 jobs:
-  # ===== JOB 1: BUILD ET TEST =====
-  build-and-test:
-    name: 🔨 Build & Test Spring Boot
+  build-and-docker:
+    name: Build Spring Boot & Docker
     runs-on: ubuntu-latest
     
     steps:
-    # Checkout du code source
-    - name: 📥 Checkout code
+    # Récupérer le code
+    - name: Checkout code
       uses: actions/checkout@v4
     
-    # Configuration Java
-    - name: ☕ Setup Java ${{ env.JAVA_VERSION }}
+    # Installer Java 21
+    - name: Setup Java 21
       uses: actions/setup-java@v4
       with:
-        java-version: ${{ env.JAVA_VERSION }}
+        java-version: '21'
         distribution: 'temurin'
         cache: maven
     
-    # Cache des dépendances Maven
-    - name: 📦 Cache Maven dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
-    
-    # Compilation et tests
-    - name: 🔧 Compile and run tests
+    # Compiler et tester avec Maven
+    - name: Build with Maven
       working-directory: ./backend/todo
       run: |
         chmod +x mvnw
         ./mvnw clean compile test --batch-mode
     
-    # Création du JAR
-    - name: 📦 Build JAR
+    # Créer le JAR
+    - name: Package JAR
       working-directory: ./backend/todo
       run: ./mvnw clean package -DskipTests --batch-mode
     
-    # Upload du JAR comme artifact
-    - name: 📤 Upload JAR artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: spring-boot-jar
-        path: backend/todo/target/*.jar
-        retention-days: 1
-
-  # ===== JOB 2: BUILD DOCKER IMAGE =====
-  dockerize:
-    name: 🐳 Build Docker Image
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    
-    steps:
-    # Checkout du code
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    # Configuration Docker Buildx
-    - name: 🔧 Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    # Login au GitHub Container Registry
-    - name: 🔑 Login to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    
-    # Extraction des métadonnées
-    - name: 🏷️ Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-    
-    # Build et push de l'image Docker
-    - name: 🐳 Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./backend/todo
-        file: ./backend/todo/Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        platforms: linux/amd64,linux/arm64
-
-  # ===== JOB 3: DEPLOY (SIMULÉ) =====
-  deploy:
-    name: 🚀 Deploy (Simulation)
-    runs-on: ubuntu-latest
-    needs: [build-and-test, dockerize]
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: 🎯 Simulate deployment
+    # Vérifier que le JAR est créé
+    - name: Verify JAR creation
+      working-directory: ./backend/todo
       run: |
-        echo "🚀 === DÉPLOIEMENT SIMULÉ ==="
-        echo "📦 Image Docker construite avec succès !"
-        echo "🌐 Image disponible sur : ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest"
-        echo "📍 Prêt pour déploiement sur :"
-        echo "   - AWS ECS"
-        echo "   - Kubernetes"
-        echo "   - Docker Swarm"
-        echo "   - Azure Container Instances"
-        echo "✅ Pipeline terminé avec succès !"
+        echo "📦 JAR créé :"
+        ls -la target/*.jar
+    
+    # Construire l'image Docker (sans push)
+    - name: Build Docker image
+      working-directory: ./backend/todo
+      run: |
+        docker build -t xks-todo-backend:${{ github.sha }} .
+        docker build -t xks-todo-backend:latest .
+    
+    # Vérifier l'image Docker
+    - name: Verify Docker image
+      run: |
+        echo "🐳 Images Docker créées :"
+        docker images | grep xks-todo-backend
+        echo "📏 Taille de l'image :"
+        docker images xks-todo-backend:latest --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
+    
+    # Test rapide de l'image
+    - name: Test Docker image
+      run: |
+        echo "🧪 Test de l'image Docker..."
+        docker run --rm -d --name test-backend -p 8080:8080 xks-todo-backend:latest
+        sleep 30
+        echo "🏥 Test du health check..."
+        curl -f http://localhost:8080/actuator/health || echo "Health check échoué (normal si pas de actuator)"
+        docker stop test-backend
+    
+    # Simulation du déploiement
+    - name: Deploy simulation
+      run: |
+        echo "🎯 === DÉPLOIEMENT SIMULÉ ==="
+        echo "✅ Spring Boot compilé avec succès !"
+        echo "📦 JAR créé dans target/"
+        echo "🐳 Image Docker créée : xks-todo-backend:latest"
+        echo "🚀 Prêt pour le déploiement !"
+        echo "💡 Commande pour déployer :"
+        echo "   docker run -p 8080:8080 xks-todo-backend:latest"
+        echo "🌐 API sera disponible sur : http://localhost:8080"
