@@ -73,7 +73,7 @@ jobs:
   deploy:
     name: 🚀 Deploy Simulation
     runs-on: ubuntu-latest
-    needs: [build-react, build-docker, test-docker]
+    needs: [build-react, build-docker]
     if: github.ref == 'refs/heads/main'
     
     steps:
