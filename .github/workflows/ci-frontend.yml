@@ -57,23 +57,27 @@ jobs:
         name: react-build
         path: frontend/build/
     
+    - name: 🔑 Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: ✅ Confirmer login réussi
+      run: echo "🎉 Login Docker Hub réussi !"
+    
     - name: 🐳 Build Docker image
       working-directory: ./frontend
       run: |
-        # Build avec tags multiples
+        echo "🔨 Build de l'image Docker..."
         docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:latest .
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:${{ github.sha }} .
-        
-        # Push vers Docker Hub
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:latest
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:${{ github.sha }}
+        echo "✅ Build terminé"
     
-    - name: 📋 Docker Hub info
+    - name: 📤 Push Docker image  
       run: |
-        echo "🎉 Images poussées vers Docker Hub :"
-        echo "🐳 ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:latest"
-        echo "🐳 ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:${{ github.sha }}"
-
+        echo "📤 Push vers Docker Hub..."
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/xks-todo-frontend:latest
+        echo "🎉 Push réussi !"
 
   # ===== JOB 3: DEPLOY SIMULATION =====
   deploy:
