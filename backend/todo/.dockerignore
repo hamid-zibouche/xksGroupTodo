@@ -1,0 +1,47 @@
+# =============================================================================
+# .dockerignore - Exclusions pour le build Docker
+# =============================================================================
+
+# Répertoires de build et cache
+target/
+.mvn/wrapper/maven-wrapper.jar
+*.log
+
+# IDE et éditeurs
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+
+# Système d'exploitation
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Tests et couverture
+*.log
+*.tmp
+
+# Fichiers temporaires
+*.swp
+*.swo
+*~
+
+# Node modules (si présent)
+node_modules/
+
+# Autres
+*.bak
+*.orig
